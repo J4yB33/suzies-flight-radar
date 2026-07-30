@@ -1,17 +1,32 @@
 #include <Arduino.h>
+
 #include "aircraft.h"
+#include "app_config.h"
 #include "board_config.h"
 
 namespace {
-constexpr double TEST_STATION_LAT = 54.5460;
-constexpr double TEST_STATION_LON = -1.7050;
-constexpr float TEST_RADAR_RADIUS_KM = 100.0F;
 
 void printBanner() {
     Serial.println();
     Serial.println("========================================");
-    Serial.println("        SUZIE'S FLIGHT RADAR");
+    Serial.printf("        %s\n", AppConfig::DEVICE_NAME);
     Serial.println("========================================");
+}
+
+void printHardwareStatus() {
+    Serial.printf("Board: %s\n", BoardConfig::BOARD_NAME);
+    Serial.printf("SKU: %s\n", BoardConfig::BOARD_SKU);
+    Serial.printf("PCB revision: %s\n", BoardConfig::PCB_REVISION);
+    Serial.printf(
+        "Target display: %ux%u\n",
+        BoardConfig::SCREEN_WIDTH,
+        BoardConfig::SCREEN_HEIGHT
+    );
+
+    if (!BoardConfig::DISPLAY_PROFILE_TESTED) {
+        Serial.println("DISPLAY DISABLED: V1.1 display profile has not been hardware-tested.");
+        Serial.println("Serial and radar calculation tests will continue safely.");
+    }
 }
 
 void runProjectionSelfTest() {
@@ -27,10 +42,10 @@ void runProjectionSelfTest() {
     };
 
     const RadarPoint point = projectAircraft(
-        TEST_STATION_LAT,
-        TEST_STATION_LON,
+        AppConfig::DEFAULT_LATITUDE,
+        AppConfig::DEFAULT_LONGITUDE,
         testAircraft,
-        TEST_RADAR_RADIUS_KM,
+        AppConfig::DEFAULT_RADIUS_KM,
         300,
         240,
         200
@@ -46,21 +61,21 @@ void runProjectionSelfTest() {
         point.visible ? "yes" : "no"
     );
 }
-}
+
+}  // namespace
 
 void setup() {
     Serial.begin(115200);
     delay(1200);
+
     printBanner();
-
-    Serial.printf("Target display: %ux%u\n", BoardConfig::SCREEN_WIDTH, BoardConfig::SCREEN_HEIGHT);
-
-    if (!BoardConfig::HARDWARE_PROFILE_VERIFIED) {
-        Serial.println("DISPLAY DISABLED: board pin mapping has not been verified.");
-        Serial.println("Copy the RGB, touch and backlight values from the exact Elecrow factory example.");
-    }
-
+    printHardwareStatus();
     runProjectionSelfTest();
+
+    Serial.printf(
+        "First-boot demonstration mode: %s\n",
+        AppConfig::DEMO_MODE_ON_FIRST_BOOT ? "enabled" : "disabled"
+    );
     Serial.println("Firmware scaffold started successfully.");
 }
 
